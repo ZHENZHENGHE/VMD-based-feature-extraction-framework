@@ -1,0 +1,17 @@
+# VS Code 配置文件
+.vscode/
+
+# Python 字节码缓存
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# VS Code 历史文件
+.history/
+
+# Jupyter Notebook 临时文件
+.ipynb_checkpoints/
+
+# 输出文件夹（如果不想提交也可以加上）
+paper_outputs/
