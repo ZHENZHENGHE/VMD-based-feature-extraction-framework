@@ -218,9 +218,9 @@ def recommend_adaptive_parameters(
 
     # 噪声越重，伪影检测阈值可略降低，平滑窗口略加大。
     # 但事件检测阈值不能过低，否则会把噪声误判成生理事件。
-    amp_k = 6.5 - 1.5 * quality_badness
-    slope_k = 6.5 - 1.5 * quality_badness
-    curvature_k = 6.5 - 1.5 * quality_badness
+    amp_k = 6.5 - 1.0 * quality_badness
+    slope_k = 6.5 - 1.0 * quality_badness
+    curvature_k = 6.5 - 1.0 * quality_badness
 
     event_amp_k = 3.0 + 0.8 * quality_badness
     event_area_k = 1.5 + 0.5 * quality_badness
