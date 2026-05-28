@@ -2,7 +2,7 @@
 """
 ppvmd_nonlinear_paper_utils.py
 
-我把论文阶段常用的非线性动力学辅助函数集中放在这里。
+把论文阶段常用的非线性动力学辅助函数集中放在这里。
 这个文件不改动既有 ppvmd_tools 里的预处理、VMD、相空间特征提取函数；
 它只负责论文图、RQA 可视化、分形复杂度、统计比较和受试者级输出。
 """
@@ -34,7 +34,7 @@ def get_available_signal_columns(
         "VMD_Mode4",
     ),
 ) -> List[str]:
-    """我只返回当前数据表中真实存在的信号列，避免后面画图时报错。"""
+    """只返回当前数据表中真实存在的信号列，避免后面画图时报错。"""
     return [c for c in preferred if c in df.columns]
 
 
@@ -56,9 +56,9 @@ def plot_phase_space_grid(
     title_prefix: str = "",
 ):
     """
-    我把多个窗口的三维相空间轨迹画成网格图。
+    把多个窗口的三维相空间轨迹画成网格图。
 
-    我在这里每个窗口单独估计 tau 和 m，用于探索性可视化。
+    在这里每个窗口单独估计 tau 和 m，用于探索性可视化。
     最终分类阶段可以在训练集中固定 tau/m，以避免信息泄露。
     """
     if signal_col not in phase_df.columns:
@@ -115,7 +115,7 @@ def plot_phase_space_grid(
 
 
 def reconstruct_phase_space_for_rp(x: Sequence[float], tau: int, m: int) -> Optional[np.ndarray]:
-    """我按延迟嵌入公式构造 recurrence plot 使用的相空间矩阵。"""
+    """按延迟嵌入公式构造 recurrence plot 使用的相空间矩阵。"""
     x = np.asarray(x, dtype=float)
     x = x[np.isfinite(x)]
 
@@ -132,7 +132,7 @@ def reconstruct_phase_space_for_rp(x: Sequence[float], tau: int, m: int) -> Opti
 
 def recurrence_matrix_fixed_rr(X: np.ndarray, rr: float = 0.05) -> Tuple[Optional[np.ndarray], float]:
     """
-    我用固定 recurrence rate 反推出 epsilon，再构造 recurrence matrix。
+    用固定 recurrence rate 反推出 epsilon，再构造 recurrence matrix。
 
     这样做的原因是：不同窗口的 recurrence density 一致，图之间更公平可比。
     """
@@ -159,7 +159,7 @@ def estimate_tau_m_safe(
     max_tau: int = 120,
     max_dim: int = 8,
 ) -> Tuple[int, int]:
-    """我给 tau/m 估计加保护，防止个别窗口失败导致整批绘图中断。"""
+    """给 tau/m 估计加保护，防止个别窗口失败导致整批绘图中断。"""
     try:
         tau, m, _ = estimate_embedding_parameters(
             x,
@@ -185,7 +185,7 @@ def plot_recurrence_grid(
     ncols: int = 3,
     title_prefix: str = "Event-guided",
 ):
-    """我用固定 recurrence rate 画多个窗口的 recurrence plots。"""
+    """用固定 recurrence rate 画多个窗口的 recurrence plots。"""
     if signal_col not in phase_df.columns:
         print(f"Skip {signal_col}: column not found.")
         return None
@@ -249,7 +249,7 @@ def plot_recurrence_grid(
 
 
 def higuchi_fd(x: Sequence[float], kmax: int = 10) -> float:
-    """我计算 Higuchi fractal dimension，用它描述短窗口信号的跨尺度粗糙度。"""
+    """计算 Higuchi fractal dimension，用它描述短窗口信号的跨尺度粗糙度。"""
     x = np.asarray(x, dtype=float)
     x = x[np.isfinite(x)]
     N = len(x)
@@ -279,7 +279,7 @@ def higuchi_fd(x: Sequence[float], kmax: int = 10) -> float:
 
 
 def katz_fd(x: Sequence[float]) -> float:
-    """我计算 Katz fractal dimension，作为 HFD 的辅助分形指标。"""
+    """计算 Katz fractal dimension，作为 HFD 的辅助分形指标。"""
     x = np.asarray(x, dtype=float)
     x = x[np.isfinite(x)]
     N = len(x)
@@ -294,7 +294,7 @@ def katz_fd(x: Sequence[float]) -> float:
 
 
 def petrosian_fd(x: Sequence[float]) -> float:
-    """我计算 Petrosian fractal dimension，作为快速稳健的辅助复杂度指标。"""
+    """计算 Petrosian fractal dimension，作为快速稳健的辅助复杂度指标。"""
     x = np.asarray(x, dtype=float)
     x = x[np.isfinite(x)]
     N = len(x)
@@ -309,7 +309,7 @@ def petrosian_fd(x: Sequence[float]) -> float:
 
 
 def robust_zscore_1d(x: Sequence[float]) -> np.ndarray:
-    """我用 median 和 MAD 做稳健标准化，避免异常点主导分形特征。"""
+    """用 median 和 MAD 做稳健标准化，避免异常点主导分形特征。"""
     x = np.asarray(x, dtype=float)
     med = np.nanmedian(x)
     mad = np.nanmedian(np.abs(x - med))
@@ -323,7 +323,7 @@ def add_fractal_features_to_feature_table(
     signal_cols: Sequence[str],
     kmax: int = 10,
 ) -> pd.DataFrame:
-    """我给已有窗口特征表追加 HFD/KFD/PFD 三类分形复杂度特征。"""
+    """给已有窗口特征表追加 HFD/KFD/PFD 三类分形复杂度特征。"""
     out = feature_df.copy()
 
     for i, w in enumerate(windows):
@@ -356,7 +356,7 @@ def add_fractal_features_to_feature_table(
 
 
 def get_default_nonlinear_feature_suffixes() -> Tuple[str, ...]:
-    """我统一定义论文阶段关注的非线性特征后缀。"""
+    """统一定义论文阶段关注的非线性特征后缀。"""
     return (
         "SampEn", "PermEn",
         "PS_TrajectoryLength", "PS_MeanStep", "PS_StepStd", "PS_StateSpread",
@@ -372,7 +372,7 @@ def infer_nonlinear_feature_columns(
     signal_prefixes: Optional[Sequence[str]] = None,
     suffixes: Optional[Sequence[str]] = None,
 ) -> List[str]:
-    """我从特征表里自动识别可用于统计比较的数值特征列。"""
+    """从特征表里自动识别可用于统计比较的数值特征列。"""
     if suffixes is None:
         suffixes = get_default_nonlinear_feature_suffixes()
 
@@ -388,7 +388,7 @@ def infer_nonlinear_feature_columns(
 
 
 def cohens_d(x: Sequence[float], y: Sequence[float]) -> float:
-    """我计算 Cohen's d，用标准化均值差表示两组差异强度。"""
+    """计算 Cohen's d，用标准化均值差表示两组差异强度。"""
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
     x = x[np.isfinite(x)]
@@ -402,7 +402,7 @@ def cohens_d(x: Sequence[float], y: Sequence[float]) -> float:
 
 
 def cliffs_delta(x: Sequence[float], y: Sequence[float]) -> float:
-    """我计算 Cliff's delta，用非参数秩效应量表示两组整体大小关系。"""
+    """计算 Cliff's delta，用非参数秩效应量表示两组整体大小关系。"""
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
     x = x[np.isfinite(x)]
@@ -414,7 +414,7 @@ def cliffs_delta(x: Sequence[float], y: Sequence[float]) -> float:
 
 
 def benjamini_hochberg_fdr(p_values: Sequence[float]) -> np.ndarray:
-    """我用 Benjamini-Hochberg 方法做 FDR 多重比较校正。"""
+    """用 Benjamini-Hochberg 方法做 FDR 多重比较校正。"""
     p = np.asarray(p_values, dtype=float)
     q = np.full_like(p, np.nan, dtype=float)
     valid = np.isfinite(p)
@@ -439,7 +439,7 @@ def balanced_sample_fixed_windows(
     fixed_feature_df: pd.DataFrame,
     random_state: int = 42,
 ) -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """我从 fixed 窗口中随机抽取与 event-guided 数量相同的窗口，形成平衡比较表。"""
+    """从 fixed 窗口中随机抽取与 event-guided 数量相同的窗口，形成平衡比较表。"""
     event_df = event_feature_df.copy()
     fixed_df = fixed_feature_df.copy()
     event_df["WindowMethod"] = "event_guided"
@@ -463,7 +463,7 @@ def compare_two_window_methods(
     method_b: str = "fixed",
     min_n_per_group: int = 3,
 ) -> pd.DataFrame:
-    """我比较 event-guided 与 fixed 两种窗口方法的非线性特征差异。"""
+    """比较 event-guided 与 fixed 两种窗口方法的非线性特征差异。"""
     df = feature_df.copy()
     rows = []
 
@@ -522,7 +522,7 @@ def build_event_vs_fixed_report(
     random_state: int = 42,
     min_n_per_group: int = 3,
 ) -> Dict[str, pd.DataFrame]:
-    """我一键生成 event-guided vs fixed 的平衡统计报告。"""
+    """一键生成 event-guided vs fixed 的平衡统计报告。"""
     event_df, fixed_sampled_df, combined = balanced_sample_fixed_windows(
         event_feature_df,
         fixed_feature_df,
@@ -561,7 +561,7 @@ def plot_method_boxplots(
     show_points: bool = True,
     title: str = "Event-guided vs fixed-window nonlinear dynamics features",
 ):
-    """我为核心特征画 event-guided 与 fixed 的箱线图。"""
+    """为核心特征画 event-guided 与 fixed 的箱线图。"""
     features = [f for f in features if f in feature_df.columns]
     if len(features) == 0:
         raise ValueError("No features available for plotting.")
@@ -608,7 +608,7 @@ def plot_top_method_differences(
     effect_col: str = "CliffsDelta",
     title: str = "Top event-guided vs fixed-window differences by Cliff's delta",
 ):
-    """我按效应量排序画条形图，帮助筛选最敏感的非线性指标。"""
+    """按效应量排序画条形图，帮助筛选最敏感的非线性指标。"""
     if comparison_df.empty:
         raise ValueError("comparison_df is empty.")
     plot_df = comparison_df.copy()
@@ -638,7 +638,7 @@ def aggregate_features_by_subject(
     method_col: str = "WindowMethod",
     aggregations: Sequence[str] = ("mean", "std", "median", "min", "max"),
 ) -> pd.DataFrame:
-    """我把窗口级特征聚合为受试者级特征，避免把同一个人的多个窗口当成独立受试者。"""
+    """把窗口级特征聚合为受试者级特征，避免把同一个人的多个窗口当成独立受试者。"""
     df = feature_df.copy()
     group_cols = [subject_col]
     if label_col in df.columns:
@@ -662,7 +662,7 @@ def build_subject_master_features(
     output_root: str | Path = "./results",
     fixed_method_name: str = "fixed300",
 ) -> pd.DataFrame:
-    """我把一个受试者的 event-guided 和 fixed-window 特征合并成 master_features 表。"""
+    """把一个受试者的 event-guided 和 fixed-window 特征合并成 master_features 表。"""
     event_df = event_feature_df.copy()
     fixed_df = fixed_feature_df.copy()
 

@@ -1,0 +1,6 @@
+﻿Method,FeatureGroup,NStableFeatures
+event_guided,PhaseSpace,10
+event_guided,RQA,2
+event_guided,DistributionMorphology,1
+fixed,DistributionMorphology,13
+fixed,Fractal,2

@@ -1,0 +1,2 @@
+SubjectID,Label,SamplingRate,FixedWindowLength,NumEventWindows,NumFixedWindows,VMD_K,VMD_alpha
+32SY000131,1,0.83,300,139,214,6,2000
