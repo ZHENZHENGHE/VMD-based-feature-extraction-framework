@@ -2,22 +2,22 @@
 """
 06_feature_importance_and_ablation.py
 
-我用这个脚本完成两个适合小样本医学数据的解释性分析：
+用这个脚本完成两个适合小样本医学数据的解释性分析：
 
 1. Feature group ablation
    特征组消融实验：
-   我分别只使用 Entropy / RQA / Fractal / PhaseSpace / LLE /
+   分别只使用 Entropy / RQA / Fractal / PhaseSpace / LLE /
    VMD_Mode3 / VMD_Mode4 / CoreNonlinear / AllBiomarker 特征做 LOSO 分类，
    用来判断哪一类动力学信息最有判别价值。
 
 2. LOSO selection frequency
    LOSO 特征稳定性筛选：
-   我在每一个 Leave-One-Subject-Out 训练折内部执行 SelectKBest，
+   在每一个 Leave-One-Subject-Out 训练折内部执行 SelectKBest，
    然后统计每个特征在所有折中被选中的频率。
    这个适合当前 15 例左右的小样本医学数据。
 
 重要修改：
-- 我剔除了 Tau / EmbeddingDim / EmbeddedVectors / RQA_epsilon / NumWindows 等算法参数或窗口结构变量，
+- 剔除了 Tau / EmbeddingDim / EmbeddedVectors / RQA_epsilon / NumWindows 等算法参数或窗口结构变量，
   避免把它们错误解释为生理 biomarker。
 - 所有分类性能评估均使用 subject-level LOSO。
 - 每一折内部完成 imputation / scaling / feature selection，避免信息泄漏。
@@ -79,7 +79,7 @@ RANDOM_STATE = 42
 # Feature filtering rules
 # ============================================================
 
-# 我把这些变量视为算法参数、窗口结构变量或潜在非生理变量，不作为主 biomarker。
+# 把这些变量视为算法参数、窗口结构变量或潜在非生理变量，不作为主 biomarker。
 NON_BIOMARKER_PATTERNS = [
     "NumWindows",
     "WindowID",
@@ -103,13 +103,13 @@ NON_BIOMARKER_PATTERNS = [
 
 
 def is_non_biomarker_feature(feature_name: str) -> bool:
-    """我判断一个特征是否应从主 biomarker 分析中剔除。"""
+    """判断一个特征是否应从主 biomarker 分析中剔除。"""
 
     return any(pattern in feature_name for pattern in NON_BIOMARKER_PATTERNS)
 
 
 def infer_feature_group(feature_name: str) -> str:
-    """我根据特征名给每个特征标注所属动力学类别。"""
+    """根据特征名给每个特征标注所属动力学类别。"""
 
     if "RQA" in feature_name:
         return "RQA"
@@ -142,7 +142,7 @@ def infer_feature_group(feature_name: str) -> str:
 # ============================================================
 
 def load_table(path: Path):
-    """我读取 subject-level 表，并只保留可用于建模的数值型 biomarker 特征。"""
+    """读取 subject-level 表，并只保留可用于建模的数值型 biomarker 特征。"""
 
     if not path.exists():
         raise FileNotFoundError(f"Input file not found: {path}")
@@ -161,15 +161,15 @@ def load_table(path: Path):
     X_df = df.drop(columns=["SubjectID", "Label"], errors="ignore")
     X_df = X_df.select_dtypes(include=[np.number])
 
-    # 我删除全空列和常数列。
+    # 删除全空列和常数列。
     X_df = X_df.dropna(axis=1, how="all")
     X_df = X_df.loc[:, X_df.nunique(dropna=True) > 1]
 
-    # 我删除算法参数、窗口结构变量和不适合作为生理 biomarker 的变量。
+    # 删除算法参数、窗口结构变量和不适合作为生理 biomarker 的变量。
     drop_cols = [c for c in X_df.columns if is_non_biomarker_feature(c)]
     X_biomarker = X_df.drop(columns=drop_cols, errors="ignore")
 
-    # 我再次删除剔除后可能出现的常数列。
+    # 再次删除剔除后可能出现的常数列。
     X_biomarker = X_biomarker.dropna(axis=1, how="all")
     X_biomarker = X_biomarker.loc[:, X_biomarker.nunique(dropna=True) > 1]
 
@@ -177,7 +177,7 @@ def load_table(path: Path):
 
 
 def select_feature_group(X_df: pd.DataFrame, group_name: str) -> pd.DataFrame:
-    """我按照特征名字选择不同非线性特征组。"""
+    """按照特征名字选择不同非线性特征组。"""
 
     cols = X_df.columns.tolist()
 
@@ -236,7 +236,7 @@ def select_feature_group(X_df: pd.DataFrame, group_name: str) -> pd.DataFrame:
 
 
 def calc_metrics(y_true, y_pred, y_score):
-    """我计算医学分类常用指标。"""
+    """计算医学分类常用指标。"""
 
     tn, fp, fn, tp = confusion_matrix(
         y_true,
@@ -262,7 +262,7 @@ def calc_metrics(y_true, y_pred, y_score):
 
 
 def make_rf():
-    """我统一创建随机森林模型，避免不同实验参数不一致。"""
+    """统一创建随机森林模型，避免不同实验参数不一致。"""
 
     return RandomForestClassifier(
         n_estimators=RF_N_ESTIMATORS,
@@ -279,7 +279,7 @@ def make_rf():
 
 def loso_single_model(X_df, y, model, k_features=10):
     """
-    我用 LOSO 评估单个特征组的分类性能。
+    用 LOSO 评估单个特征组的分类性能。
     每一折内部完成 imputation / scaling / SelectKBest / classifier。
     """
 
@@ -325,7 +325,7 @@ def loso_single_model(X_df, y, model, k_features=10):
 
 
 def run_feature_group_ablation(datasets):
-    """我运行 event-guided 和 fixed 的特征组消融实验。"""
+    """运行 event-guided 和 fixed 的特征组消融实验。"""
 
     groups = [
         "Entropy",
@@ -393,7 +393,7 @@ def run_feature_group_ablation(datasets):
 
 
 def plot_ablation_results(ablation_df: pd.DataFrame):
-    """我绘制特征组消融的 AUC 和 ACC 对比图。"""
+    """绘制特征组消融的 AUC 和 ACC 对比图。"""
 
     if ablation_df.empty:
         return
@@ -406,7 +406,7 @@ def plot_ablation_results(ablation_df: pd.DataFrame):
             values=metric,
         )
 
-        # 我按照 event_guided 的表现排序，便于观察主方法。
+        # 按照 event_guided 的表现排序，便于观察主方法。
         if "event_guided" in pivot.columns:
             pivot = pivot.sort_values("event_guided", ascending=True)
         else:
@@ -434,7 +434,7 @@ def plot_ablation_results(ablation_df: pd.DataFrame):
 
 def loso_selection_frequency(X_df, y, method_name, k_features=20):
     """
-    我统计每个特征在 LOSO 每一折中被 SelectKBest 选中的频率。
+    统计每个特征在 LOSO 每一折中被 SelectKBest 选中的频率。
 
     这一步回答：
     哪些特征在不同训练子集里反复被选中。
@@ -491,7 +491,7 @@ def loso_selection_frequency(X_df, y, method_name, k_features=20):
 
 
 def plot_selection_frequency(freq_df: pd.DataFrame, method_name: str):
-    """我绘制 LOSO 特征选择频率前 20 名。"""
+    """绘制 LOSO 特征选择频率前 20 名。"""
 
     top = freq_df.head(20).iloc[::-1]
 
@@ -509,7 +509,7 @@ def plot_selection_frequency(freq_df: pd.DataFrame, method_name: str):
 
 
 def summarize_stable_features(all_freq_df: pd.DataFrame):
-    """我汇总稳定入选特征，并按方法和特征类别统计。"""
+    """汇总稳定入选特征，并按方法和特征类别统计。"""
 
     stable_df = all_freq_df[
         all_freq_df["SelectionFrequency"] >= STABLE_FREQ_THRESHOLD
@@ -553,7 +553,7 @@ def summarize_stable_features(all_freq_df: pd.DataFrame):
 # ============================================================
 
 def save_feature_filter_qc(datasets):
-    """我保存被剔除的非 biomarker 特征，方便论文方法部分说明。"""
+    """保存被剔除的非 biomarker 特征，方便论文方法部分说明。"""
 
     rows = []
 

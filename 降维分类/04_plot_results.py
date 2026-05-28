@@ -2,7 +2,7 @@
 """
 04_plot_results.py
 
-我用这个脚本画 event-guided 与 fixed-window 的分类结果对比图。
+用这个脚本画 event-guided 与 fixed-window 的分类结果对比图。
 """
 
 from pathlib import Path
@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 DATA_DIR = Path(r"D:/a_work/课题组实验数据处理/新预处理/results/merged_ml/classification_results")
 summary = pd.read_csv(DATA_DIR / "event_vs_fixed_ml_summary.csv")
 
-# 我先选择每个 Method-Model 的最佳 AUC 结果，避免同一个模型不同 k_features 重复显示。
+# 先选择每个 Method-Model 的最佳 AUC 结果，避免同一个模型不同 k_features 重复显示。
 best = (
     summary
     .sort_values(["Method", "Model", "AUC", "Balanced_ACC"], ascending=[True, True, False, False])

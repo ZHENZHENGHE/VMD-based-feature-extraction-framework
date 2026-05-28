@@ -2,7 +2,7 @@
 """
 05_loso_robust_validation.py
 
-我用这个脚本完成 SCI 论文阶段的严格验证：
+用这个脚本完成 SCI 论文阶段的严格验证：
 1. event-guided 与 fixed 分别做受试者级 LOSO 分类
 2. 所有预处理、缺失填补、标准化、特征筛选都放在每一折训练集内部
 3. 输出 ACC / SEN / SPE / F1 / AUC
@@ -68,7 +68,7 @@ FIXED_FILE = IN_DIR / "all_fixed_subject_features.csv"
 # ============================================================
 
 def load_subject_table(path: Path):
-    """我读取受试者级表，并分离 X/y/SubjectID。"""
+    """读取受试者级表，并分离 X/y/SubjectID。"""
     df = pd.read_csv(path)
 
     if "SubjectID" not in df.columns or "Label" not in df.columns:
@@ -80,10 +80,10 @@ def load_subject_table(path: Path):
     drop_cols = ["SubjectID", "Label"]
     X_df = df.drop(columns=drop_cols, errors="ignore")
 
-    # 我只保留数值特征，避免字符串列进入模型。
+    # 只保留数值特征，避免字符串列进入模型。
     X_df = X_df.select_dtypes(include=[np.number]).copy()
 
-    # 我删除全缺失或常数列，这些列对分类没有贡献。
+    # 删除全缺失或常数列，这些列对分类没有贡献。
     X_df = X_df.dropna(axis=1, how="all")
     nunique = X_df.nunique(dropna=True)
     X_df = X_df.loc[:, nunique > 1]
@@ -92,7 +92,7 @@ def load_subject_table(path: Path):
 
 
 def make_models(random_state=42):
-    """我定义多种适合小样本医学分类的模型。"""
+    """定义多种适合小样本医学分类的模型。"""
     models = {
         "Logistic_L1": LogisticRegression(
             penalty="l1", solver="liblinear", C=0.5,
@@ -133,7 +133,7 @@ def make_models(random_state=42):
 
 
 def get_score_from_model(model, X_test):
-    """我统一获取阳性类别概率或决策分数。"""
+    """统一获取阳性类别概率或决策分数。"""
     if hasattr(model, "predict_proba"):
         return model.predict_proba(X_test)[:, 1]
     if hasattr(model, "decision_function"):
@@ -143,7 +143,7 @@ def get_score_from_model(model, X_test):
 
 
 def safe_metrics(y_true, y_pred, y_score):
-    """我计算分类指标，并对极小样本下的异常情况做保护。"""
+    """计算分类指标，并对极小样本下的异常情况做保护。"""
     acc = accuracy_score(y_true, y_pred)
     sen = recall_score(y_true, y_pred, pos_label=1, zero_division=0)
     f1 = f1_score(y_true, y_pred, pos_label=1, zero_division=0)
@@ -171,7 +171,7 @@ def safe_metrics(y_true, y_pred, y_score):
 
 
 def loso_evaluate(X_df, y, subject_ids, method_name, k_features=10, random_state=42):
-    """我用 Leave-One-Subject-Out 做严格受试者级验证。"""
+    """用 Leave-One-Subject-Out 做严格受试者级验证。"""
     X = X_df.values
     n_features = X.shape[1]
     k = min(k_features, n_features)
@@ -236,7 +236,7 @@ def loso_evaluate(X_df, y, subject_ids, method_name, k_features=10, random_state
 
 
 def bootstrap_ci(y_true, y_pred, y_score, n_boot=5000, random_state=42):
-    """我用受试者级 bootstrap 估计指标 95% 置信区间。"""
+    """用受试者级 bootstrap 估计指标 95% 置信区间。"""
     rng = np.random.default_rng(random_state)
     n = len(y_true)
     records = []
@@ -265,7 +265,7 @@ def bootstrap_ci(y_true, y_pred, y_score, n_boot=5000, random_state=42):
 
 
 def plot_roc_from_predictions(pred_df, method, model, out_dir):
-    """我根据 LOSO 预测结果画 ROC 曲线。"""
+    """根据 LOSO 预测结果画 ROC 曲线。"""
     sub = pred_df[(pred_df["Method"] == method) & (pred_df["Model"] == model)].copy()
     y_true = sub["TrueLabel"].values
     y_score = sub["Score"].values
@@ -300,7 +300,7 @@ if __name__ == "__main__":
     all_summary = []
     all_predictions = []
 
-    # 我建议小样本先固定 k=10，避免用测试结果反复挑 k。
+    # 建议小样本先固定 k=10，避免用测试结果反复挑 k。
     K_FEATURES = 10
 
     summary_event, pred_event = loso_evaluate(
@@ -325,7 +325,7 @@ if __name__ == "__main__":
     print("\nLOSO summary:")
     print(summary_df.sort_values(["Method", "AUC"], ascending=[True, False]))
 
-    # 我自动选择每种方法 AUC 最高的模型，用于 ROC 和 CI。
+    # 自动选择每种方法 AUC 最高的模型，用于 ROC 和 CI。
     best_models = (
         summary_df.sort_values("AUC", ascending=False)
         .groupby("Method")

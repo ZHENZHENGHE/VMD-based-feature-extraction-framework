@@ -2,7 +2,7 @@
 """
 07_phase_space_statistics.py
 
-我用这个脚本补充正式论文需要的三个部分：
+用这个脚本补充正式论文需要的三个部分：
 1. PhaseSpace feature-space visualization：基于受试者级 PhaseSpace 特征做 PCA 可视化。
 2. Bootstrap 95% CI：基于 LOSO 预测结果计算 ACC/SEN/SPE/F1/AUC 的置信区间。
 3. DeLong test + McNemar test：比较 event-guided 与 fixed 的 AUC 和配对分类错误。

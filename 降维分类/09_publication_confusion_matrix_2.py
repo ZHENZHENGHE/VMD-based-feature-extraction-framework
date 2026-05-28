@@ -2,7 +2,7 @@
 """
 09_publication_confusion_matrix.py
 
-用这个脚本补充论文级 confusion matrix 图和分类指标表。
+我用这个脚本补充论文级 confusion matrix 图和分类指标表。
 
 输入：
     results/ml_validation_loso/loso_ml_predictions.csv
@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import (
     confusion_matrix,
     accuracy_score,
+    balanced_accuracy_score,
     f1_score,
     precision_score,
 )
@@ -40,12 +41,12 @@ METHOD_LABELS = {
     "fixed": "Fixed-window",
 }
 
-# 这里约定：0=Healthy/Normal，1=STC/Patient。
+# 我这里约定：0=Healthy/Normal，1=STC/Patient。
 CLASS_LABELS = ["Healthy", "STC"]
 
 
 def find_column(df, candidates):
-    """自动匹配不同脚本可能产生的列名。"""
+    """我自动匹配不同脚本可能产生的列名。"""
 
     lower_map = {c.lower(): c for c in df.columns}
 
@@ -57,7 +58,7 @@ def find_column(df, candidates):
 
 
 def load_predictions(path: Path):
-    """读取 LOSO prediction 表，并统一列名。"""
+    """我读取 LOSO prediction 表，并统一列名。"""
 
     if not path.exists():
         raise FileNotFoundError(path)
@@ -104,7 +105,7 @@ def load_predictions(path: Path):
 
 
 def compute_metrics(y_true, y_pred):
-    """计算医学分类指标。"""
+    """我计算医学分类指标。"""
 
     cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
     tn, fp, fn, tp = cm.ravel()
@@ -112,6 +113,7 @@ def compute_metrics(y_true, y_pred):
     acc = accuracy_score(y_true, y_pred)
     sen = tp / (tp + fn) if (tp + fn) > 0 else np.nan
     spe = tn / (tn + fp) if (tn + fp) > 0 else np.nan
+    balanced_acc = balanced_accuracy_score(y_true, y_pred)
     f1 = f1_score(y_true, y_pred, zero_division=0)
     ppv = precision_score(y_true, y_pred, zero_division=0)
     npv = tn / (tn + fn) if (tn + fn) > 0 else np.nan
@@ -122,6 +124,7 @@ def compute_metrics(y_true, y_pred):
         "FN": fn,
         "TP": tp,
         "ACC": acc,
+        "Balanced_ACC": balanced_acc,
         "SEN": sen,
         "SPE": spe,
         "F1": f1,
@@ -131,31 +134,33 @@ def compute_metrics(y_true, y_pred):
 
 
 def plot_single_confusion_matrix(ax, cm, title):
-    """画单个混淆矩阵。"""
+    """画单个混淆矩阵，同时显示计数和百分比。"""
 
     im = ax.imshow(cm, interpolation="nearest", cmap="Blues")
 
-    ax.set_title(title, fontsize=15)
+    ax.set_title(title, fontsize=14)
     ax.set_xticks(np.arange(len(CLASS_LABELS)))
     ax.set_yticks(np.arange(len(CLASS_LABELS)))
-    ax.set_xticklabels(CLASS_LABELS, fontsize=12)
-    ax.set_yticklabels(CLASS_LABELS, fontsize=12)
+    ax.set_xticklabels(CLASS_LABELS, fontsize=11)
+    ax.set_yticklabels(CLASS_LABELS, fontsize=11)
 
-    ax.set_xlabel("Predicted label", fontsize=13)
-    ax.set_ylabel("True label", fontsize=13)
+    ax.set_xlabel("Predicted label", fontsize=12)
+    ax.set_ylabel("True label", fontsize=12)
 
     thresh = cm.max() / 2.0 if cm.max() > 0 else 0
+    total = cm.sum() if cm.sum() > 0 else 1
 
     for i in range(cm.shape[0]):
         for j in range(cm.shape[1]):
+            pct = 100 * cm[i, j] / total
             ax.text(
                 j,
                 i,
-                str(cm[i, j]),
+                f"{cm[i, j]}\n({pct:.1f}%)",
                 ha="center",
                 va="center",
                 color="white" if cm[i, j] > thresh else "black",
-                fontsize=16,
+                fontsize=13,
                 fontweight="bold",
             )
 
@@ -206,7 +211,8 @@ if __name__ == "__main__":
 
         title = (
             f"{METHOD_LABELS.get(method, method)}\n"
-            f"ACC={metrics['ACC']:.3f}, SEN={metrics['SEN']:.3f}, SPE={metrics['SPE']:.3f}"
+            f"ACC={metrics['ACC']:.3f}, BACC={metrics['Balanced_ACC']:.3f}\n"
+            f"SEN={metrics['SEN']:.3f}, SPE={metrics['SPE']:.3f}"
         )
 
         im = plot_single_confusion_matrix(ax, cm, title)
@@ -244,6 +250,7 @@ if __name__ == "__main__":
         "FN",
         "TP",
         "ACC",
+        "Balanced_ACC",
         "SEN",
         "SPE",
         "F1",

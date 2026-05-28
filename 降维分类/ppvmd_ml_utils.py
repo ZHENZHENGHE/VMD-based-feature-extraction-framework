@@ -2,14 +2,14 @@
 """
 ppvmd_ml_utils.py
 
-我把多受试者合并、受试者级聚合、特征筛选、降维和机器学习分类函数集中放在这里。
+把多受试者合并、受试者级聚合、特征筛选、降维和机器学习分类函数集中放在这里。
 这个文件专门服务于结肠压力非线性特征的 healthy vs STC/patient 分类实验。
 
 重要原则：
-1. 我只把 SubjectID 作为独立样本单位。
-2. 我不把同一个受试者的多个窗口当成独立样本。
-3. 我把 event-guided 和 fixed-window 分开建模，再比较两套方案。
-4. 我在交叉验证内部完成标准化、缺失值填充、特征筛选和分类，避免数据泄漏。
+1. 只把 SubjectID 作为独立样本单位。
+2. 不把同一个受试者的多个窗口当成独立样本。
+3. 把 event-guided 和 fixed-window 分开建模，再比较两套方案。
+4. 在交叉验证内部完成标准化、缺失值填充、特征筛选和分类，避免数据泄漏。
 """
 
 from __future__ import annotations
@@ -86,7 +86,7 @@ def find_subject_feature_files(
     fixed_suffix: str = "_fixed_phase_features.xlsx",
     main_subdir: str = "main",
 ) -> Tuple[List[Path], List[Path]]:
-    """我在 results 目录下寻找每个受试者导出的 event 和 fixed 特征表。"""
+    """在 results 目录下寻找每个受试者导出的 event 和 fixed 特征表。"""
     root_dir = Path(root_dir)
     event_files: List[Path] = []
     fixed_files: List[Path] = []
@@ -110,7 +110,7 @@ def find_subject_feature_files(
 
 
 def read_feature_table(path: str | Path) -> pd.DataFrame:
-    """我根据文件后缀读取 csv/xlsx 特征表。"""
+    """根据文件后缀读取 csv/xlsx 特征表。"""
     path = Path(path)
     if path.suffix.lower() in [".xlsx", ".xls"]:
         return pd.read_excel(path)
@@ -120,13 +120,13 @@ def read_feature_table(path: str | Path) -> pd.DataFrame:
 
 
 def merge_feature_files(files: Sequence[str | Path], method_name: Optional[str] = None) -> pd.DataFrame:
-    """我把多个受试者的同类窗口特征表合并成一个窗口级总表。"""
+    """把多个受试者的同类窗口特征表合并成一个窗口级总表。"""
     dfs = []
     for path in files:
         path = Path(path)
         df = read_feature_table(path)
 
-        # 我从文件名兜底提取 SubjectID，避免个别表里 SubjectID 缺失。
+        # 从文件名兜底提取 SubjectID，避免个别表里 SubjectID 缺失。
         if "SubjectID" not in df.columns:
             subject_id = path.name.split("_event_guided_phase_features")[0]
             subject_id = subject_id.split("_fixed_phase_features")[0]
@@ -149,7 +149,7 @@ def build_event_fixed_window_tables(
     fixed_suffix: str = "_fixed_phase_features.xlsx",
     main_subdir: str = "main",
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """我一键合并所有受试者的 event-guided 和 fixed-window 窗口级特征表。"""
+    """一键合并所有受试者的 event-guided 和 fixed-window 窗口级特征表。"""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -187,7 +187,7 @@ def infer_feature_columns(
     include_prefixes: Optional[Sequence[str]] = None,
     exclude_patterns: Optional[Sequence[str]] = None,
 ) -> List[str]:
-    """我从窗口级表中自动识别可用于聚合和分类的数值特征列。"""
+    """从窗口级表中自动识别可用于聚合和分类的数值特征列。"""
     meta = set(meta_cols)
     feature_cols = []
 
@@ -206,7 +206,7 @@ def infer_feature_columns(
 
 
 def iqr(values: Sequence[float]) -> float:
-    """我计算四分位距，用来描述窗口间稳健离散程度。"""
+    """计算四分位距，用来描述窗口间稳健离散程度。"""
     values = np.asarray(values, dtype=float)
     values = values[np.isfinite(values)]
     if len(values) == 0:
@@ -221,7 +221,7 @@ def aggregate_window_to_subject(
     label_col: str = "Label",
     aggregations: Sequence[str] = ("mean", "std", "median", "min", "max", "iqr"),
 ) -> pd.DataFrame:
-    """我把窗口级特征聚合为受试者级特征。后续分类只使用这个表。"""
+    """把窗口级特征聚合为受试者级特征。后续分类只使用这个表。"""
     df = window_df.copy()
     if feature_cols is None:
         feature_cols = infer_feature_columns(df)
@@ -263,28 +263,94 @@ def build_subject_level_tables(
     output_dir: str | Path,
     aggregations: Sequence[str] = ("mean", "std", "median", "iqr"),
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """我分别构建 event-guided 和 fixed-window 的受试者级分类表。"""
+    """分别构建 event-guided 和 fixed-window 的受试者级分类表。"""
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    # ============================================================
+    # 1. 找到 event 和 fixed 共有的窗口级数值特征
+    # ============================================================
     event_feature_cols = infer_feature_columns(event_window_df)
     fixed_feature_cols = infer_feature_columns(fixed_window_df)
 
     common_cols = sorted(set(event_feature_cols).intersection(set(fixed_feature_cols)))
 
+    # ============================================================
+    # 2. 删除不适合作为 biomarker 的窗口级特征
+    #    这些是算法参数、窗口结构变量或潜在泄漏变量
+    # ============================================================
+    non_biomarker_patterns = [
+        "NumWindows",
+        "WindowID",
+        "WindowMethod",
+        "StartTime",
+        "EndTime",
+        "CenterTime",
+        "StartIndex",
+        "EndIndex",
+        "EventID",
+        "EventStartTime",
+        "EventEndTime",
+        "EventCoverage",
+        "NumPoints",
+        "Tau",
+        "EmbeddingDim",
+        "EmbeddedVectors",
+        "RQA_epsilon",
+        "epsilon",
+    ]
+
+    clean_common_cols = [
+        c for c in common_cols
+        if not any(p in c for p in non_biomarker_patterns)
+    ]
+
+    dropped_common_cols = sorted(set(common_cols) - set(clean_common_cols))
+
+    print("\nCommon raw feature columns:", len(common_cols))
+    print("Common biomarker feature columns:", len(clean_common_cols))
+    print("Dropped non-biomarker raw columns:", len(dropped_common_cols))
+
+    if len(dropped_common_cols) > 0:
+        pd.DataFrame({
+            "DroppedFeature": dropped_common_cols,
+            "Reason": "algorithm/window/non-biomarker variable"
+        }).to_csv(
+            output_dir / "dropped_non_biomarker_raw_features.csv",
+            index=False,
+            encoding="utf-8-sig",
+        )
+
+    # ============================================================
+    # 3. 用清理后的 biomarker 特征做窗口级 → 受试者级聚合
+    # ============================================================
     event_subject_df = aggregate_window_to_subject(
         event_window_df,
-        feature_cols=common_cols,
-        aggregations=aggregations,
-    )
-    fixed_subject_df = aggregate_window_to_subject(
-        fixed_window_df,
-        feature_cols=common_cols,
+        feature_cols=clean_common_cols,
         aggregations=aggregations,
     )
 
-    event_subject_df.to_csv(output_dir / "all_event_subject_features.csv", index=False, encoding="utf-8-sig")
-    fixed_subject_df.to_csv(output_dir / "all_fixed_subject_features.csv", index=False, encoding="utf-8-sig")
+    fixed_subject_df = aggregate_window_to_subject(
+        fixed_window_df,
+        feature_cols=clean_common_cols,
+        aggregations=aggregations,
+    )
+
+    # ============================================================
+    # 4. 保存 cleaned subject-level 表
+    # ============================================================
+    event_subject_df.to_csv(
+        output_dir / "all_event_subject_features.csv",
+        index=False,
+        encoding="utf-8-sig",
+    )
+
+    fixed_subject_df.to_csv(
+        output_dir / "all_fixed_subject_features.csv",
+        index=False,
+        encoding="utf-8-sig",
+    )
 
     return event_subject_df, fixed_subject_df
 
@@ -295,7 +361,7 @@ def build_subject_level_tables(
 
 
 def check_subject_table(df: pd.DataFrame, label_col: str = "Label") -> pd.DataFrame:
-    """我检查受试者级表的样本数、标签分布、缺失率和常数特征数量。"""
+    """检查受试者级表的样本数、标签分布、缺失率和常数特征数量。"""
     feature_cols = [c for c in df.columns if c not in ["SubjectID", label_col, "NumWindows"]]
     numeric_cols = [c for c in feature_cols if pd.api.types.is_numeric_dtype(df[c])]
     constant_cols = []
@@ -321,7 +387,7 @@ def check_subject_table(df: pd.DataFrame, label_col: str = "Label") -> pd.DataFr
 
 
 def cliffs_delta(x: Sequence[float], y: Sequence[float]) -> float:
-    """我计算 Cliff's delta，用非参数效应量表示两组差异方向和强度。"""
+    """计算 Cliff's delta，用非参数效应量表示两组差异方向和强度。"""
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
     x = x[np.isfinite(x)]
@@ -333,7 +399,7 @@ def cliffs_delta(x: Sequence[float], y: Sequence[float]) -> float:
 
 
 def cohens_d(x: Sequence[float], y: Sequence[float]) -> float:
-    """我计算 Cohen's d，用标准化均值差描述效应量。"""
+    """计算 Cohen's d，用标准化均值差描述效应量。"""
     x = np.asarray(x, dtype=float)
     y = np.asarray(y, dtype=float)
     x = x[np.isfinite(x)]
@@ -347,7 +413,7 @@ def cohens_d(x: Sequence[float], y: Sequence[float]) -> float:
 
 
 def bh_fdr(p_values: Sequence[float]) -> np.ndarray:
-    """我用 Benjamini-Hochberg 方法做 FDR 校正。"""
+    """用 Benjamini-Hochberg 方法做 FDR 校正。"""
     p = np.asarray(p_values, dtype=float)
     q = np.full_like(p, np.nan, dtype=float)
     valid = np.isfinite(p)
@@ -371,7 +437,7 @@ def univariate_feature_screening(
     label_col: str = "Label",
     exclude_cols: Sequence[str] = ("SubjectID", "Label", "NumWindows"),
 ) -> pd.DataFrame:
-    """我做单变量统计筛选，用于解释性排序，不直接在全数据上作为最终模型筛选。"""
+    """做单变量统计筛选，用于解释性排序，不直接在全数据上作为最终模型筛选。"""
     feature_cols = [
         c for c in subject_df.columns
         if c not in exclude_cols and pd.api.types.is_numeric_dtype(subject_df[c])
@@ -419,7 +485,7 @@ def univariate_feature_screening(
 
 
 def get_classifier_zoo(random_state: int = 42, class_weight: str | None = "balanced") -> Dict[str, object]:
-    """我定义一组适合小样本医学分类的模型。"""
+    """定义一组适合小样本医学分类的模型。"""
     models: Dict[str, object] = {
         "Logistic_L2": LogisticRegression(
             penalty="l2", C=1.0, max_iter=5000, solver="liblinear", class_weight=class_weight, random_state=random_state
@@ -486,7 +552,7 @@ def get_classifier_zoo(random_state: int = 42, class_weight: str | None = "balan
 
 
 def make_cv(y: Sequence[int], random_state: int = 42, preferred_splits: int = 5):
-    """我根据小样本标签分布自动选择合适的交叉验证策略。"""
+    """根据小样本标签分布自动选择合适的交叉验证策略。"""
     y = np.asarray(y)
     class_counts = pd.Series(y).value_counts()
     min_count = int(class_counts.min())
@@ -502,7 +568,7 @@ def make_cv(y: Sequence[int], random_state: int = 42, preferred_splits: int = 5)
 
 
 def calculate_binary_metrics(y_true, y_pred, y_score) -> Dict[str, float]:
-    """我统一计算医学二分类常用指标。"""
+    """统一计算医学二分类常用指标。"""
     y_true = np.asarray(y_true)
     y_pred = np.asarray(y_pred)
 
@@ -541,7 +607,7 @@ def calculate_binary_metrics(y_true, y_pred, y_score) -> Dict[str, float]:
 
 
 def get_model_score(model, X_test):
-    """我尽量从模型中取出正类概率或连续得分，用于 AUC。"""
+    """尽量从模型中取出正类概率或连续得分，用于 AUC。"""
     if hasattr(model, "predict_proba"):
         return model.predict_proba(X_test)[:, 1]
     if hasattr(model, "decision_function"):
@@ -557,7 +623,7 @@ def build_model_pipeline(
     pca_components: Optional[int] = None,
     random_state: int = 42,
 ) -> Pipeline:
-    """我构建完整 pipeline，确保所有预处理都在交叉验证内部完成。"""
+    """构建完整 pipeline，确保所有预处理都在交叉验证内部完成。"""
     steps = []
     steps.append(("imputer", SimpleImputer(strategy="median")))
 
@@ -600,7 +666,7 @@ def evaluate_models_cv(
     scaler: str = "standard",
     feature_selection: str = "kbest_f",
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """我用交叉验证评估多个分类器，并输出总体指标和逐折预测。"""
+    """用交叉验证评估多个分类器，并输出总体指标和逐折预测。"""
     df = subject_df.copy()
     if feature_cols is None:
         feature_cols = [
@@ -612,7 +678,7 @@ def evaluate_models_cv(
     y = df[label_col].astype(int).to_numpy()
     subjects = df[subject_col].astype(str).to_numpy() if subject_col in df.columns else np.arange(len(df)).astype(str)
 
-    # 我避免 k 大于当前特征数。
+    # 避免 k 大于当前特征数。
     k_use = min(k_features, X.shape[1])
 
     if models is None:
@@ -632,7 +698,7 @@ def evaluate_models_cv(
             X_train, X_test = X.iloc[train_idx], X.iloc[test_idx]
             y_train, y_test = y[train_idx], y[test_idx]
 
-            # 我跳过训练集中只有一个类别的异常折。
+            # 跳过训练集中只有一个类别的异常折。
             if len(np.unique(y_train)) < 2:
                 continue
 
@@ -692,11 +758,11 @@ def run_event_fixed_ml_experiment(
     output_dir: str | Path,
     random_state: int = 42,
     preferred_splits: int = 5,
-    k_features_list: Sequence[int] = (10, 20, 30),
+    k_features_list: Sequence[int] = [10, 20, 30],
     scaler: str = "standard",
     feature_selection: str = "kbest_f",
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-    """我分别对 event-guided 与 fixed-window 受试者级表建模，并比较分类性能。"""
+    """分别对 event-guided 与 fixed-window 受试者级表建模，并比较分类性能。"""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 

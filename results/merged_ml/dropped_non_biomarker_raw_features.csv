@@ -1,0 +1,21 @@
+﻿DroppedFeature,Reason
+Pressure_Clean_EmbeddedVectors,algorithm/window/non-biomarker variable
+Pressure_Clean_EmbeddingDim,algorithm/window/non-biomarker variable
+Pressure_Clean_NumPoints,algorithm/window/non-biomarker variable
+Pressure_Clean_RQA_epsilon,algorithm/window/non-biomarker variable
+Pressure_Clean_Tau,algorithm/window/non-biomarker variable
+VMD_Mode3_EmbeddedVectors,algorithm/window/non-biomarker variable
+VMD_Mode3_EmbeddingDim,algorithm/window/non-biomarker variable
+VMD_Mode3_NumPoints,algorithm/window/non-biomarker variable
+VMD_Mode3_RQA_epsilon,algorithm/window/non-biomarker variable
+VMD_Mode3_Tau,algorithm/window/non-biomarker variable
+VMD_Mode4_EmbeddedVectors,algorithm/window/non-biomarker variable
+VMD_Mode4_EmbeddingDim,algorithm/window/non-biomarker variable
+VMD_Mode4_NumPoints,algorithm/window/non-biomarker variable
+VMD_Mode4_RQA_epsilon,algorithm/window/non-biomarker variable
+VMD_Mode4_Tau,algorithm/window/non-biomarker variable
+VMD_Reconstructed_EmbeddedVectors,algorithm/window/non-biomarker variable
+VMD_Reconstructed_EmbeddingDim,algorithm/window/non-biomarker variable
+VMD_Reconstructed_NumPoints,algorithm/window/non-biomarker variable
+VMD_Reconstructed_RQA_epsilon,algorithm/window/non-biomarker variable
+VMD_Reconstructed_Tau,algorithm/window/non-biomarker variable

@@ -2,14 +2,14 @@
 """
 03_run_classification.py
 
-我用这个脚本运行最终分类实验：
+用这个脚本运行最终分类实验：
 1. event-guided 受试者级特征分类
 2. fixed-window 受试者级特征分类
 3. 多分类器横向比较
 4. 输出 ACC/SEN/SPE/PPV/NPV/F1/AUC
 
 注意：
-我在交叉验证内部完成缺失值填充、标准化和特征筛选，避免数据泄漏。
+在交叉验证内部完成缺失值填充、标准化和特征筛选，避免数据泄漏。
 """
 
 from pathlib import Path
@@ -33,7 +33,8 @@ summary_df, pred_df = run_event_fixed_ml_experiment(
     output_dir=OUT_DIR,
     random_state=42,
     preferred_splits=5,
-    k_features_list=(10, 20, 30),
+    # k_features_list=(10, 20, 30),
+    k_features_list=[10],
     scaler="standard",
     feature_selection="kbest_f",
 )

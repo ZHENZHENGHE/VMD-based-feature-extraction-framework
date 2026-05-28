@@ -2,7 +2,7 @@
 """
 02_feature_screening.py
 
-我用这个脚本分别对 event-guided 和 fixed-window 受试者级表做单变量特征筛选。
+用这个脚本分别对 event-guided 和 fixed-window 受试者级表做单变量特征筛选。
 这些结果主要用于解释和候选特征排序，不直接替代交叉验证内部的特征筛选。
 """
 
